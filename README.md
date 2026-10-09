@@ -14,12 +14,14 @@ Browser (Next.js + Three.js) ──► Vercel         pages + API routes (shop, 
 
 | Your 4 steps | What was built | Where |
 |---|---|---|
-| **1. Flick-and-collide prototype** | Deterministic capsule physics (spin, bounce, heavy hits), 3D scene, AI opponent (3 levels), table + pen visuals | `shared/physics.ts`, `game3d/`, `lib/ai.ts` |
+| **1. Flick-and-collide prototype** | Deterministic capsule physics (spin, bounce, heavy hits), photoreal 3D classroom, AI opponent (3 levels), Break-Time Ladder, pass-the-phone | `shared/physics.ts`, `game3d/`, `lib/ai.ts` |
 | **2. Guest profiles, coins, shop** | Anonymous guest accounts, username + PIN, coins, atomic shop purchases, 3D item preview, equip loadout & table | `app/api/*`, `lib/server/*`, `components/Shop.tsx`, `db/schema.sql` |
 | **3. Invite codes & 1v1 rooms** | Share link or 6-char code, authoritative room server, reconnect, turn timer, rematch, emotes | `worker/src/index.ts`, `components/Lobby.tsx` |
 | **4. Polish, daily rewards, leaderboards** | Daily streak reward, first-match bonus, weekly + all-time boards by state, sparks, camera shake, sounds, PWA, WhatsApp sharing, report button | `app/api/daily`, `app/api/leaderboard`, `lib/sound.ts` |
 
-**3D:** Real 3D with Three.js. Camera is a tilted 3D view that auto-fits portrait phones; a "Top" button gives a flat view. Pens visibly change with every fortification (extra cover sleeves, tape, iron rings, weighted tails, rubber/steel tips, skins). Tables are selectable and change the physics (slippery glass, grippy concrete, tiny desk...). All textures are drawn in code, so the game downloads **no image assets**.
+**Look and feel (v2, realistic):** a photographic Nigerian classroom rendered in real 3D with Three.js: a worn bench desk with scratches, biro doodles and carved initials, a steel frame and under-desk book rack; other desks and exercise books behind; a chalkboard; louvre windows throwing striped sunlight across the desk (high graphics); soft shadows, reflections, film grain and vignette. Biros are translucent hex barrels with a visible ink cartridge, printed text, metal nib and pocket clip, and every fortification shows up on the pen (second/third casing, masking tape, steel rings, lead/brass/coin tail weights, rubber/steel/ridged tips). Sound is procedural and physical: plastic knocks, a desk-friction hiss that follows pen speed, and a thud when a pen hits the concrete floor. Everything is painted in code, so the game still downloads **no image or audio assets**. The UI is deliberately sober: exercise-book paper panels on a dark classroom background, condensed type, crest-style avatars, no emoji or neon.
+
+**Our own modes:** **Break-Time Ladder** (a 9-rival campaign from JSS 1 to the Head Boy, each rival with their own pen and desk, edit them in `lib/ladder.ts`), **Pass the phone** (two players, one device), **Quick practice** (3 AI levels), and **Fight a friend online**.
 
 ---
 
@@ -112,7 +114,7 @@ Then `cd worker && npx wrangler deploy` again. **Test:** two phones, create a ro
 
 ## How the game works
 
-* **Controls:** drag back anywhere on the desk and release (slingshot). Longer pull = more power. Spin buttons (↺ ● ↻) add curve. Pens point in the direction you flick.
+* **Controls:** pull back anywhere on the desk and release (slingshot). Longer pull = more power. A faint dashed guide projects onto the desk. Spin buttons (↺ • ↻) add curve. Pens point the way you flick.
 * **Win a round** by knocking the opponent's pen off (its centre leaves the desk). If *your* pen falls, you lose the round. Best of 3.
 * **Heavy move** = a collision harder than 85 cm/s. Heavy moves pay bonus coins.
 * **Trade-off design:** heavier pens hit harder but launch slower; rubber tips bounce; teflon slides far; glass tables are icy; concrete is grippy.
@@ -147,12 +149,14 @@ db/schema.sql    database tables
 * **Add a pen part / skin / table:** add one entry to `ITEM_LIST` in `shared/catalog.ts`. It appears in the shop, previews in 3D, and is enforced by the API and room server automatically. Tables take `width`, `depth` (cm) and `friction`; pen parts take `mods` (mass, radius, restitution, grip, length, spin) and `vis` for how it looks.
 * **Tune the feel:** constants at the top of `shared/physics.ts` (`HEAVY_SPEED`, friction scale), table `friction` and `maxSpeed` formula in `buildPenSpec`. Run `npm run test:physics` after changes.
 * **Camera framing:** `updateCamera()` in `game3d/BiroScene.ts` (elevation angles and margins).
-* **Local pen brands:** `skin` entries only need three colours. Real brand names/logos can be trademarked, so check before using them.
-* **Gameplay GIF on the landing page:** `components/Landing.tsx` has an animated placeholder; swap it for your own recording in `/public`.
+* **Realism knobs:** lighting and exposure are in the `BiroScene` constructor; desk wear (scratches, doodles, carved words like "FC BARCA" or "GOD DEY") is in `wear()` in `game3d/textures.ts`; the classroom (walls, board text, neighbouring desks) is `buildRoom()` in `game3d/models.ts`; pen modelling is `buildPen()`. Fonts and colours: `app/layout.tsx`, `tailwind.config.ts`, `app/globals.css`.
+* **Graphics: Low** (Home footer) turns off shadows, striped window light and lowers resolution for old Android phones.
+* **Local pen brands:** `skin` entries only need three colours. The printed barrel text ("STAR WRITER") is fictional on purpose; real brand names and logos can be trademarked.
+* **Landing page:** the hero is a live 3D scene (`components/Landing.tsx`).
 
 ## Honest notes and known limits
 
-* **I could not run `npm install` / `next build` or see the 3D visuals in my environment.** What *was* verified: the physics, rules, AI (AI-vs-AI full matches) and token signing run headlessly and pass, and the TypeScript was checked for syntax/logic errors. So expect small first-run fixes, most likely camera framing or visual tweaks. `next.config.mjs` sets `ignoreBuildErrors` so a stray type nit will not block your first deploy; run `npm run typecheck` and tighten it later.
+* **I could not run `npm install` / `next build` or see the 3D visuals in my environment.** The realism pass in particular (lighting, textures, camera framing, the striped window light) was written blind, so expect to tweak exposure, light intensities and camera angles after your first look. What *was* verified: the physics, rules, AI (AI-vs-AI full matches) and token signing run headlessly and pass, and the TypeScript was checked for syntax/logic errors. So expect small first-run fixes, most likely camera framing or visual tweaks. `next.config.mjs` sets `ignoreBuildErrors` so a stray type nit will not block your first deploy; run `npm run typecheck` and tighten it later.
 * Tutorial is a "How to play" popup + practice mode, not a guided interactive tutorial.
 * Public matchmaking, ranked mode and spectator mode are not built (Phase 3 of your roadmap).
 * Practice-mode results are reported by the browser, so they are low-value and capped; friend-match rewards are server-verified.
@@ -177,4 +181,4 @@ db/schema.sql    database tables
 ## Roadmap ideas
 Public matchmaking and ranked ladder · daily quests · pen rarity and collections · spectator mode · shareable result images · guided tutorial · profanity filter · admin page for reports.
 
-Have fun, and may your pen never fall first. 🇳🇬
+Have fun, and may your pen never fall first.

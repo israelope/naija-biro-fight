@@ -1,0 +1,2 @@
+GAME_SECRET=change-me-to-a-long-random-string
+API_URL=http://localhost:3000
